@@ -21,6 +21,7 @@ fn process_cmd_new(cmd: NewCommand) -> Result<(), Error> {
             name: cmd.task,
             date: chrono::Local::now(),
             prio: cmd.prio,
+            group: cmd.group.clone(),
         },
     );
     if !model.groups.contains_key(&cmd.group) {
@@ -68,18 +69,16 @@ fn process_cmd_list(cmd: ListCommand) -> Result<(), Error> {
     Ok(())
 }
 
-// TODO: O(n^2) – cringe!
-// returns the name of the group and the index in that group if found
-fn find_group_of_task(tid: TID, model: &Model) -> Option<(&String, usize)> {
-    for group in model.groups.values() {
-        for (index, id) in group.tids.iter().enumerate() {
-            if *id == tid {
-                return Some((&group.name, index));
-            }
-        }
+fn delete_task(tid: TID, model: &mut Model) {
+    let task = model.tasks.get(&tid).unwrap();
+    let group: &mut Group = model.groups.get_mut(&task.group).unwrap();
+    let index = group.tids.iter().position(|t| *t == tid).unwrap();
+    group.tids.remove(index);
+    // if the group is empty, delete the group
+    if group.tids.is_empty() {
+        model.groups.remove(&task.group);
     }
-
-    None
+    model.tasks.remove(&tid);
 }
 
 fn process_cmd_done(cmd: DoneCommand) -> Result<(), Error> {
@@ -93,22 +92,8 @@ fn process_cmd_done(cmd: DoneCommand) -> Result<(), Error> {
             .ok_or(Error::InvalidTID(tid.to_string()))?;
     }
 
-    // O(n^3) - cringe TODO: safe group id in tasks
     for tid in cmd.tids.iter() {
-        // get the name of the task's group
-        let (group_name, index) = find_group_of_task(*tid, &model).unwrap();
-        let group_name = group_name.clone();
-        {
-            // get a reference to the right group from the model
-            let group: &mut Group = model.groups.get_mut(&group_name).unwrap();
-            // delete tid from the right group
-            group.tids.remove(index);
-            // if the group is empty, delete the group
-            if group.tids.is_empty() {
-                model.groups.remove(&group_name);
-            }
-            model.tasks.remove(&tid);
-        }
+        delete_task(*tid, &mut model);
     }
     write_model(&model)?;
 
@@ -118,16 +103,21 @@ fn process_cmd_done(cmd: DoneCommand) -> Result<(), Error> {
 }
 
 fn move_task(tid: TID, model: &mut Model, new_group_name: &str) {
-    let (old_group_name, index) = find_group_of_task(tid, model).unwrap();
-    let old_group_name = old_group_name.clone();
-    if new_group_name == old_group_name {
+    let task = model.tasks.get(&tid).unwrap();
+
+    if new_group_name == task.group {
         return;
     }
     // remove the tid from the old group
-    let old_group: &mut Group = model.groups.get_mut(&old_group_name).unwrap();
-    old_group.tids.remove(index);
+    let old_group: &mut Group = model.groups.get_mut(&task.group).unwrap();
+    let old_index = old_group
+        .tids
+        .iter()
+        .position(|tid| *tid == task.tid)
+        .unwrap();
+    old_group.tids.remove(old_index);
     if old_group.tids.is_empty() {
-        model.groups.remove(&old_group_name);
+        model.groups.remove(&task.group);
     }
 
     // create new group if `new_group_name` doesn't exist yet
@@ -142,6 +132,9 @@ fn move_task(tid: TID, model: &mut Model, new_group_name: &str) {
     // insert the tid to the new group
     let new_group: &mut Group = model.groups.get_mut(new_group_name).unwrap();
     new_group.tids.push(tid);
+
+    let task = model.tasks.get_mut(&tid).unwrap();
+    task.group = new_group_name.to_string();
 }
 
 fn process_cmd_update(cmd: UpdateCommand) -> Result<(), Error> {
@@ -154,39 +147,34 @@ fn process_cmd_update(cmd: UpdateCommand) -> Result<(), Error> {
         .get(&tid)
         .ok_or(Error::InvalidTID(tid.to_string()))?;
 
-    let task = model.tasks.get_mut(&tid).unwrap();
-    if let Some(prio) = cmd.prio {
-        task.prio = prio;
-    }
-    if let Some(name) = cmd.task {
-        task.name = name;
+    {
+        let task = model.tasks.get_mut(&tid).unwrap();
+        if let Some(prio) = cmd.prio {
+            task.prio = prio;
+        }
+        if let Some(name) = cmd.task {
+            task.name = name;
+        }
     }
     if let Some(ref group_name) = cmd.group {
         move_task(tid, &mut model, group_name);
     }
 
     // figure out the group of the task in order to sort all the tasks in the group
-    let group_name: String;
     {
-        let group = match cmd.group {
-            Some(new_group_name) => model.groups.get_mut(&new_group_name).unwrap(),
-            None => {
-                let (old_group_name, _) = find_group_of_task(tid, &model).unwrap();
-                let old_group_name = old_group_name.clone();
-                model.groups.get_mut(&old_group_name).unwrap()
-            }
-        };
+        let task = model.tasks.get(&tid).unwrap();
+        let group = model.groups.get_mut(&task.group).unwrap();
         group.tids.sort_by_key(|tid| {
             let task = model.tasks.get(tid).unwrap();
             (task.prio, task.date)
         });
-        group_name = group.name.clone();
     }
 
     write_model(&model)?;
 
     println!("\nUpdate successful.");
-    let group = model.groups.get(&group_name).unwrap();
+    let task = model.tasks.get(&tid).unwrap();
+    let group = model.groups.get(&task.group).unwrap();
     println!("{}", PrintGroup::new(group, &model, None));
 
     Ok(())

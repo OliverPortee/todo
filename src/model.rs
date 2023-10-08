@@ -60,6 +60,7 @@ pub struct Task {
     pub name: String,
     pub prio: Prio,
     pub date: DateTime<Local>,
+    pub group: String,
 }
 
 #[derive(Serialize, Deserialize)]

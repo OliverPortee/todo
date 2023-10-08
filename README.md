@@ -13,4 +13,3 @@
 # To do
 
 * when filtering for a prio and no tasks fulfill this criterion, print a nice message (and not nothing)
-* group ids & safe group id in each task
