@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'todotui'",
+            "name": "Debug executable 'todo'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=todotui",
-                    "--package=todotui"
+                    "--bin=todo",
+                    "--package=todo"
                 ],
                 "filter": {
-                    "name": "todotui",
+                    "name": "todo",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'todotui'",
+            "name": "Debug unit tests in executable 'todo'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=todotui",
-                    "--package=todotui"
+                    "--bin=todo",
+                    "--package=todo"
                 ],
                 "filter": {
-                    "name": "todotui",
+                    "name": "todo",
                     "kind": "bin"
                 }
             },

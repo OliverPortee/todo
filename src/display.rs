@@ -85,3 +85,42 @@ impl<'a> Display for PrintGroup<'a> {
         Ok(())
     }
 }
+
+pub struct PrintModel<'a> {
+    groups: Vec<PrintGroup<'a>>,
+    prio: Option<Prio>,
+}
+
+impl<'a> PrintModel<'a> {
+    pub fn new(model: &'a Model, prio: Option<Prio>) -> Self {
+        let groups: Vec<PrintGroup<'a>> = model
+            .groups
+            .values()
+            .map(|g| PrintGroup::new(g, model, prio))
+            .collect();
+        // TODO: sort groups by something?
+        PrintModel { groups, prio }
+    }
+}
+
+impl<'a> Display for PrintModel<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.groups.is_empty() && self.prio.is_none() {
+            writeln!(f, "\nThere are no todos right now. Good job :)")?;
+            return Ok(())
+        }
+        // this case can only occur if the prio filters out all the tasks;
+        // otherwise we delete groups without tasks immediately
+        if self.groups.iter().all(|g| g.tasks.is_empty()) {
+            assert!(self.prio.is_some());
+            writeln!(f, "\nThere are no todos with the given priority.")?;
+            return Ok(())
+        }
+
+        for group in self.groups.iter() {
+            write!(f, "{}", group)?;
+        }
+
+        Ok(())
+    }
+}

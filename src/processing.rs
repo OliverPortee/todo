@@ -1,4 +1,4 @@
-use crate::display::PrintGroup;
+use crate::display::*;
 use crate::model::*;
 use crate::storage::*;
 
@@ -42,7 +42,7 @@ fn process_cmd_new(cmd: NewCommand) -> Result<(), Error> {
     }
     write_model(&model)?;
 
-    println!("\nNew task with id {tid}");
+    println!("\nNew task with id {tid}.");
     let group = model.groups.get(&cmd.group).unwrap();
     println!("{}", PrintGroup::new(group, &model, None));
 
@@ -58,13 +58,7 @@ fn process_cmd_list(cmd: ListCommand) -> Result<(), Error> {
         let group = model.groups.get(&group_name).unwrap();
         println!("{}", PrintGroup::new(group, &model, cmd.prio));
     } else {
-        let groups: Vec<&Group> = model.groups.values().collect();
-        if groups.is_empty() {
-            println!("\nThere are no todos right now. Good job :)\n");
-        }
-        for group in groups {
-            println!("{}", PrintGroup::new(group, &model, cmd.prio));
-        }
+        println!("{}", PrintModel::new(&model, cmd.prio));
     }
     Ok(())
 }
@@ -84,6 +78,7 @@ fn delete_task(tid: TID, model: &mut Model) {
 fn process_cmd_done(cmd: DoneCommand) -> Result<(), Error> {
     let mut model = read_model()?;
 
+    assert!(!cmd.tids.is_empty());
     // make sure that the tids are valid and return error otherwise
     for tid in cmd.tids.iter() {
         let _ = model
@@ -97,7 +92,8 @@ fn process_cmd_done(cmd: DoneCommand) -> Result<(), Error> {
     }
     write_model(&model)?;
 
-    println!("Delete successful.");
+    println!("\nDelete successful.");
+    println!("{}", PrintModel::new(&model, None));
 
     Ok(())
 }
@@ -214,7 +210,8 @@ fn process_cmd_move(cmd: MoveCommand) -> Result<(), Error> {
 
     write_model(&model)?;
 
-    println!("\nMove successful.\n");
+    println!("\nMove successful.");
+    println!("{}", PrintModel::new(&model, None));
 
     Ok(())
 }
@@ -234,7 +231,8 @@ fn process_cmd_deletegroup(cmd: DeleteGroupCommand) -> Result<(), Error> {
 
     write_model(&model)?;
 
-    println!("\nDeleted group successfully.\n");
+    println!("\nDeleted group successfully.");
+    println!("{}", PrintModel::new(&model, None));
 
     Ok(())
 }
