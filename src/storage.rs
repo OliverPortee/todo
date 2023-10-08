@@ -1,5 +1,5 @@
-use std::{path::PathBuf, fs::OpenOptions};
 use std::io::Write;
+use std::{fs::OpenOptions, path::PathBuf};
 
 use crate::model::{Error, Model};
 

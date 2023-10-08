@@ -3,7 +3,6 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Local};
 
-pub type GID = u32;
 pub type TID = u32;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize)]
