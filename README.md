@@ -22,3 +22,6 @@ This is a small no-bullshit command-line tool for managing to-dos. Tasks are org
 * `todo task1`
 * `todo task2`
 * `todo -d 0,1`: delete tasks (when you're done with them)
+
+
+For some inspiration: [the Cult of Done](https://thomasdeneuville.com/cult-of-done-manifesto/) (not mine).
